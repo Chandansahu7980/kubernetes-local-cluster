@@ -46,8 +46,6 @@ kubernetes-vagrant-lab/
     └── (future automation scripts)
 ```
 
----
-
 ## 📂 Structure
 
 - `/docs` → Learning notes
