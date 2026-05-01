@@ -5,6 +5,13 @@
 - VirtualBox or another supported hypervisor
 - The Vagrantfile located in the main source directory
 
+## Cluster Specifications
+The Vagrantfile creates a 3-node Kubernetes cluster with the following configuration:
+- **Master node**: 4GB RAM, 2 CPUs, IP: 192.168.56.10
+- **Worker1 node**: 2GB RAM, 2 CPUs, IP: 192.168.56.11
+- **Worker2 node**: 2GB RAM, 2 CPUs, IP: 192.168.56.12
+- **Base OS**: Ubuntu Jammy 64-bit
+
 ## Step 1: Copy Vagrantfile to Your Working Directory
 
 If you haven't already, copy the Vagrantfile from the main source directory to your working directory:
@@ -23,8 +30,9 @@ vagrant up
 ```
 
 This command will:
-- Create and configure all defined virtual machines
-- Install any provisioning scripts defined in the Vagrantfile
+- Create 3 virtual machines (1 master, 2 workers) with Ubuntu Jammy 64-bit
+- Configure private network with static IPs (192.168.56.10-12)
+- Allocate specified CPU and memory resources to each node
 - Display detailed logs of the initialization process
 
 ## Step 3: Verify Vagrant Machines
@@ -36,21 +44,27 @@ Verify that all Vagrant machines are running:
 vagrant status
 ```
 
-Expected output should show all machines with status: `running`
+Expected output should show all three machines with status: `running`
+- master
+- worker1
+- worker2
 
 ### SSH into Each Machine
 Test connectivity to each machine:
 
 ```powershell
-vagrant ssh <machine-name>
+vagrant ssh master
+vagrant ssh worker1
+vagrant ssh worker2
 ```
 
 ### Verify Network Connectivity
 Check if machines can communicate with each other:
 
 ```powershell
-vagrant ssh <machine-name>
-ping <other-machine-ip>
+vagrant ssh master
+ping 192.168.56.11  # Ping worker1
+ping 192.168.56.12  # Ping worker2
 exit
 ```
 
@@ -65,8 +79,8 @@ vagrant global-status
 SSH into a machine and check allocated resources:
 
 ```powershell
-vagrant ssh <machine-name>
-free -h          # Check memory
+vagrant ssh master
+free -h           # Check memory
 df -h             # Check disk space
 nproc             # Check CPU cores
 exit

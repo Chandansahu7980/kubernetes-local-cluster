@@ -19,6 +19,33 @@ This repository documents my hands-on learning and implementation of Kubernetes 
 11. Secrets
 ---
 
+## 📂 File Structure
+kubernetes-vagrant-lab/
+│
+├── README.md
+├── docs/
+│   ├── 01-setup.md
+│   ├── 02-cluster-creation.md
+│   ├── 03-kubeadm.md
+│   ├── 04-networking.md
+│   ├── 05-services.md
+│   ├── 06-kube-proxy-iptables.md
+│   ├── 07-deployments.md
+│   ├── 08-yaml-basics.md
+│   ├── 09-configmap.md
+│   └── 10-secrets.md
+│
+├── manifests/
+│   ├── nginx-deployment.yaml
+│   ├── service.yaml
+│   ├── configmap.yaml
+│   └── secret.yaml
+│
+└── scripts/
+    └── (future automation scripts)
+
+---
+
 ## 📂 Structure
 
 - `/docs` → Learning notes
