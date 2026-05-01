@@ -27,7 +27,7 @@ kubernetes-vagrant-lab/
 ├── docs/
 │   ├── 01-setup.md
 │   ├── 02-cluster-creation.md
-│   ├── 03-kubeadm.md
+│   ├── 03-node-setup.md
 │   ├── 04-networking.md
 │   ├── 05-services.md
 │   ├── 06-kube-proxy-iptables.md
