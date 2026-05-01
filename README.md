@@ -17,16 +17,7 @@ This repository documents my hands-on learning and implementation of Kubernetes 
 9. YAML Deep Dive
 10. ConfigMaps
 11. Secrets
-
 ---
-
-## 🧪 Hands-on Experiments
-
-- Load balancing across pods
-- Pod self-healing
-- Rolling updates
-- Debugging kubelet & API issues
-- Node communication troubleshooting
 
 ---
 
