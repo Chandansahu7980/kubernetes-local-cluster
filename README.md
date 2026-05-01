@@ -19,8 +19,6 @@ This repository documents my hands-on learning and implementation of Kubernetes 
 11. Secrets
 ---
 
----
-
 ## 📂 Structure
 
 - `/docs` → Learning notes
