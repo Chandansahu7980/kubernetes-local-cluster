@@ -20,6 +20,7 @@ This repository documents my hands-on learning and implementation of Kubernetes 
 ---
 
 ## 📂 File Structure
+```
 kubernetes-vagrant-lab/
 │
 ├── README.md
@@ -43,6 +44,7 @@ kubernetes-vagrant-lab/
 │
 └── scripts/
     └── (future automation scripts)
+```
 
 ---
 
