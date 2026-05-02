@@ -365,12 +365,6 @@ kubectl get nodes --no-headers | awk '{print $1}' | xargs -I {} sh -c 'echo "Nod
 ### 🔧 Troubleshooting Commands
 
 ```bash
-# Check pod status and conditions
-kubectl get pods -o jsonpath='{.items[*].status.conditions[*].type}' | tr ' ' '\n' | sort | uniq -c
-
-# Check if pods are ready
-kubectl get pods -l app=nginx -o jsonpath='{.items[*].status.containerStatuses[*].ready}' | tr ' ' '\n'
-
 # Test service connectivity from within cluster
 kubectl run test-pod --image=busybox --rm -it -- wget -qO- http://nginx:80
 
@@ -400,7 +394,7 @@ kubectl version --short
 ```
 ---
 
-# 99 - Common Issues & Troubleshooting (Real Scenarios)
+# Common Issues & Troubleshooting (Real Scenarios)
 
 This document captures real issues faced during Kubernetes setup and usage, along with root cause analysis and fixes.
 
