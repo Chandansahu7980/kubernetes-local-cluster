@@ -1,0 +1,9 @@
+# ConfigMap for storing application configuration data
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+# Data section containing key-value pairs for the application
+data:
+  # Application environment setting (e.g., dev, prod)
+  APP_ENV: "dev"
