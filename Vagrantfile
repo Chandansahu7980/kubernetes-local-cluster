@@ -25,8 +25,8 @@ Vagrant.configure("2") do |config|
       # Assign a unique host SSH port per machine to avoid conflicts
       node_config.vm.network "forwarded_port", guest: 22, host: node[:ssh_port], id: "ssh", auto_correct: true
       node_config.ssh.insert_key = false
-      node_config.ssh.max_tries = 20
-      node_config.ssh.timeout = 120
+      # node_config.ssh.max_tries = 20
+      # node_config.ssh.timeout = 120
 
       # Configure VirtualBox provider with specified CPU and memory
       node_config.vm.provider "virtualbox" do |vb|

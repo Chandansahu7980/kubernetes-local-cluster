@@ -1,0 +1,49 @@
+# Kubernetes Deployment manifest for Nginx with ConfigMap and Secrets
+# CHANGE THESE VALUES ACCORDING TO YOUR CONFIGURATION AND REQUIREMENTS:
+# - Deployment name (metadata.name)
+# - Number of replicas (spec.replicas)
+# - Container image and version (spec.containers[].image)
+# - Container port (spec.containers[].ports[].containerPort)
+# - ConfigMap name and keys (valueFrom.configMapKeyRef)
+# - Secret name and keys (valueFrom.secretKeyRef)
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+spec:
+  # CHANGE THIS: Adjust the number of pod replicas according to your needs
+  replicas: 1
+  selector:
+    matchLabels:
+      # IMPORTANT: These labels must match the template labels below
+      app: nginx
+  template:
+    metadata:
+      labels:
+        # IMPORTANT: These labels must match the selector above
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        # CHANGE THIS: If your application runs on a different port, update this value
+        - containerPort: 80
+        env:
+        # Environment variables from ConfigMap
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              # Must match the ConfigMap name that contains your config
+              name: app-config
+              # Must match the key in the ConfigMap (see 03-configmap.yaml)
+              key: APP_ENV
+        # Environment variables from Secret
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              # Must match the Secret name that contains your secrets
+              name: app-secret
+              # Must match the key in the Secret (see 04-secret.yaml)
+              key: DB_PASSWORD
