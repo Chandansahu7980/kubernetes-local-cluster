@@ -176,8 +176,10 @@ sudo mkdir -p /etc/apt/keyrings
 ```
 
 ```bash
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | \
-sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+```
+```bash
+sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 ```
 
 ```bash

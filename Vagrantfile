@@ -7,8 +7,6 @@ Vagrant.configure("2") do |config|
   # Global SSH settings (more resilient)
   config.ssh.insert_key = false
   config.ssh.keep_alive = true
-  # config.ssh.max_tries = 20
-  # config.ssh.timeout = 300
 
   # Define cluster nodes
   nodes = [
@@ -35,6 +33,11 @@ Vagrant.configure("2") do |config|
         # Stability tweaks
         vb.customize ["modifyvm", :id, "--nictype1", "virtio"]
         vb.customize ["modifyvm", :id, "--nictype2", "virtio"]
+      end
+
+      # Only the master node gets the shared host data folder
+      if node[:name] == "master"
+        node_config.vm.synced_folder "./data", "/vagrant/", type: "virtualbox"
       end
 
       # ✅ Idempotent network fix (handles Ubuntu netplan issues)
