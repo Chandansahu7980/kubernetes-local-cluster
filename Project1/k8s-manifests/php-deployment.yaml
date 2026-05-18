@@ -5,7 +5,7 @@ metadata:
   namespace: project1
 spec:
   replicas: 1
-  stategy:
+  strategy:
     type: RollingUpdate
   selector:
     matchLabels:
@@ -17,7 +17,8 @@ spec:
     spec:
       containers:
       - name: php
-        image: php-crud-app:v1
+        image: localhost/php-crud-app:v1
+        imagePullPolicy: Never
         ports:
         - containerPort: 80
         env:

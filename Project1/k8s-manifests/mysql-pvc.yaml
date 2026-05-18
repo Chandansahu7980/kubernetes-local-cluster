@@ -5,7 +5,8 @@ metadata:
   namespace: project1
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
+  storageClassName: nfs-storage
   resources:
     requests:
       storage: 100Mi
