@@ -74,8 +74,7 @@ Example shared folder:
 Export the image:
 
 ```bash
-buildah push php-crud-app:v1 \
-  docker-archive:/mnt/k8s-share/php-crud-app.tar
+buildah push php-crud-app:v1 docker-archive:/svr/nfs/shared/php-crud-app.tar
 ```
 
 ## Step 4 - Import Image into containerd
@@ -83,7 +82,7 @@ buildah push php-crud-app:v1 \
 On the master node and all workers:
 
 ```bash
-sudo ctr -n k8s.io images import /mnt/k8s-share/php-crud-app.tar
+sudo ctr -n k8s.io images import /svr/nfs/shared/php-crud-app.tar
 ```
 
 Verify the imported image on each node:
@@ -97,34 +96,8 @@ sudo ctr -n k8s.io images ls | grep php
 On the master node:
 
 ```bash
-sudo mkdir -p /mnt/k8s-share/mysql-data
-sudo chmod -R 777 /mnt/k8s-share/mysql-data
-```
-
-## Step 6 - Configure NFS Exports
-
-Edit `/etc/exports`:
-
-```bash
-sudo nano /etc/exports
-```
-
-Add the following export:
-
-```text
-/mnt/k8s-share *(rw,sync,no_subtree_check,no_root_squash)
-```
-
-Reload exports:
-
-```bash
-sudo exportfs -ra
-```
-
-Verify exports:
-
-```bash
-showmount -e
+sudo mkdir -p /srv/nfs/shared/mysql-data
+sudo chmod -R 777 /srv/nfs/shared/mysql-data
 ```
 
 ## Step 7 - Deploy Kubernetes Resources
@@ -220,195 +193,214 @@ CREATE TABLE users (
   name VARCHAR(100),
   email VARCHAR(100)
 );
+SHOW TABLES;
 ```
 
-Verify:
+Exit the MySQL shell:
 
-SHOW TABLES;
+```bash
+exit
+```
 
-Exit:
+## Step 12 - Deploy PHP Application
 
-exit;
-
-====================================================
-STEP 12 - DEPLOY PHP APPLICATION
-====================================================
-
+```bash
 kubectl apply -f php-deployment.yaml
-
 kubectl apply -f php-service.yaml
+```
 
-====================================================
-STEP 13 - VERIFY PODS
-====================================================
+## Step 13 - Verify Pods
 
+```bash
 kubectl get pods -n php-app -o wide
+```
 
-Expected:
+Expected pods:
 
-php-app-xxxxx Running
-mysql-xxxxx Running
+- `php-app-xxxxx` Running
+- `mysql-xxxxx` Running
 
-====================================================
-STEP 14 - ACCESS APPLICATION
-====================================================
+## Step 14 - Access Application
 
-Get node IP:
+Get the node IP:
 
+```bash
 kubectl get nodes -o wide
+```
 
-Open browser:
+Open the application in your browser:
 
+```text
 http://<NODE-IP>:30080
+```
 
 Example:
 
+```text
 http://192.168.1.20:30080
+```
 
-====================================================
-STEP 15 - VERIFY CRUD OPERATIONS
-====================================================
+## Step 15 - Verify CRUD Operations
 
-Test:
+Test the application by performing:
 
 1. Add User
 2. Edit User
 3. Delete User
 
-====================================================
-STEP 16 - VERIFY PERSISTENT STORAGE
-====================================================
+## Step 16 - Verify Persistent Storage
 
-Delete mysql pod:
+Delete the MySQL pod and confirm data persistence:
 
+```bash
 kubectl delete pod -l app=mysql -n php-app
+```
 
-Wait for pod recreation.
+Wait for the MySQL pod to be recreated and verify data still exists.
 
 Verify application data still exists.
 
-====================================================
-STEP 17 - USEFUL KUBERNETES COMMANDS
-====================================================
+## Step 17 - Useful Kubernetes Commands
 
-Get Pods:
+### Get Pods
 
+```bash
 kubectl get pods -n php-app
+```
 
-Watch Pods:
+### Watch Pods
 
+```bash
 kubectl get pods -n php-app -w
+```
 
-Pod Logs:
+### View Pod Logs
 
+```bash
 kubectl logs <pod-name> -n php-app
+```
 
-Describe Pod:
+### Describe a Pod
 
+```bash
 kubectl describe pod <pod-name> -n php-app
+```
 
-Enter Pod:
+### Enter a Pod Shell
 
+```bash
 kubectl exec -it <pod-name> -n php-app -- bash
+```
 
-Delete Pod:
+### Delete a Pod
 
+```bash
 kubectl delete pod <pod-name> -n php-app
+```
 
-Scale Deployment:
+### Scale Deployment
 
-kubectl scale deployment php-app \
---replicas=5 \
--n php-app
+```bash
+kubectl scale deployment php-app --replicas=5 -n php-app
+```
 
-====================================================
-STEP 18 - ROLLING UPDATE
-====================================================
+## Step 18 - Rolling Update
 
-Build new image:
+Build a new image:
 
+```bash
 buildah bud -t php-crud-app:v2 .
+```
 
-Export image:
+Export the new image:
 
-buildah push php-crud-app:v2 \
-docker-archive:/mnt/k8s-share/php-crud-app-v2.tar
+```bash
+buildah push php-crud-app:v2 docker-archive:/mnt/k8s-share/php-crud-app-v2.tar
+```
 
-Import image on all nodes:
+Import the image on all nodes:
 
-sudo ctr -n k8s.io images import \
-/mnt/k8s-share/php-crud-app-v2.tar
+```bash
+sudo ctr -n k8s.io images import /mnt/k8s-share/php-crud-app-v2.tar
+```
 
-Update deployment:
+Update the deployment image:
 
-kubectl set image deployment/php-app \
-php-app=php-crud-app:v2 \
--n php-app
+```bash
+kubectl set image deployment/php-app php-app=php-crud-app:v2 -n php-app
+```
 
-Watch rollout:
+### Watch rollout
 
+```bash
 kubectl rollout status deployment/php-app -n php-app
+```
 
-Rollback:
+### Rollback
 
+```bash
 kubectl rollout undo deployment/php-app -n php-app
+```
 
-====================================================
-TROUBLESHOOTING
-====================================================
+## Troubleshooting
 
-----------------------------------------------------
-IMAGEPULLBACKOFF
-----------------------------------------------------
+### IMAGE_PULL_BACKOFF
 
-Verify image exists:
+- Verify the image exists on each node:
 
+```bash
 sudo ctr -n k8s.io images ls
+```
 
-Ensure deployment contains:
+- Ensure the deployment uses the local image pull policy:
 
+```yaml
 imagePullPolicy: Never
+```
 
-----------------------------------------------------
-MYSQL CRASHLOOPBACKOFF
-----------------------------------------------------
+### MySQL CrashLoopBackOff
 
-Check logs:
+- Check MySQL logs:
 
+```bash
 kubectl logs deployment/mysql -n php-app
+```
 
-Fix permissions:
+- Fix NFS permissions if needed:
 
+```bash
 sudo chmod -R 777 /mnt/k8s-share/mysql-data
+```
 
-----------------------------------------------------
-PVC PENDING
-----------------------------------------------------
+### PVC Pending
 
-Check PV:
+- Check the PersistentVolume status:
 
+```bash
 kubectl get pv
+```
 
-Check PVC:
+- Check the PersistentVolumeClaim status:
 
+```bash
 kubectl get pvc -n php-app
+```
 
-----------------------------------------------------
-PHP CANNOT CONNECT TO MYSQL
-----------------------------------------------------
+### PHP cannot connect to MySQL
 
-Verify environment variables:
+- Verify MySQL-related environment variables in the PHP pod:
 
-kubectl exec -it deployment/php-app \
--n php-app -- env | grep MYSQL
+```bash
+kubectl exec -it deployment/php-app -n php-app -- env | grep MYSQL
+```
 
-Verify service:
+- Verify the PHP service and MySQL service are available:
 
+```bash
 kubectl get svc -n php-app
+```
 
-====================================================
-KUBERNETES CONCEPTS PRACTICED
-====================================================
+## Kubernetes Concepts Practiced
 
 1. Namespace
 2. Deployment
@@ -422,22 +414,3 @@ KUBERNETES CONCEPTS PRACTICED
 10. PersistentVolumeClaim
 11. NFS Storage
 12. containerd Runtime
-
-====================================================
-NEXT LEARNING TOPICS
-====================================================
-
-1. StatefulSet
-2. Helm
-3. Ingress Controller
-4. MetalLB
-5. HPA
-6. Prometheus
-7. Grafana
-8. ArgoCD
-9. RBAC
-10. NetworkPolicy
-
-====================================================
-END
-====================================================
