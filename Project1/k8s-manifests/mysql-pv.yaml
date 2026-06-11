@@ -4,11 +4,9 @@ metadata:
   name: mysql-pv
 spec:
   capacity:
-    storage: 500Mi
+    storage: 100Mi
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: nfs-storage
-  nfs:
-    server: 192.168.56.10
+  hostPath:
     path: /srv/nfs/shared/mysql-data
