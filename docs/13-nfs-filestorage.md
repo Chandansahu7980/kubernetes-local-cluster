@@ -831,16 +831,3 @@ rsize=8192,wsize=8192
 ```
 
 ---
-
-# Security Recommendations
-
-✅ Use NFSv4  
-✅ Restrict client IPs  
-✅ Avoid `no_root_squash`  
-✅ Use firewalls  
-✅ Use dedicated storage directories  
-✅ Monitor access logs  
-✅ Backup NFS data regularly  
-✅ Use read-only exports when possible  
-
----

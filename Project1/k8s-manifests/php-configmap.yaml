@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: php-config
-  namespace: project1
-data:
-  MYSQL_HOST: mysql-service
-  MYSQL_DATABASE: project1db
-  MYSQL_USER: appuser

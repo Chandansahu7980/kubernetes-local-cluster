@@ -1,416 +1,563 @@
-# PHP CRUD Application Deployment on Kubernetes
+# PHP CRUD Application on Kubernetes using StatefulSet, NFS StorageClass and Dynamic Provisioning
 
-> containerd + NFS + MySQL + PHP
+## Project Overview
 
-## Cluster Setup
+This project demonstrates deployment of a PHP CRUD application and MySQL database on Kubernetes using production-style Kubernetes resources.
 
-- **Master Node:** 1
-- **Worker Nodes:** 2
-- **Container Runtime:** containerd
-- **Shared Storage:** NFS
+The objective is to understand how stateless and stateful applications are deployed and managed in Kubernetes.
 
-## Project Structure
+This project covers:
+
+* Docker Image Creation
+* Kubernetes Deployment
+* ConfigMaps
+* Secrets
+* Services
+* StatefulSets
+* Headless Services
+* StorageClass
+* Dynamic Provisioning
+* NFS Persistent Storage
+* MySQL Stateful Applications
+* PHP Stateless Applications
+
+---
+
+# Architecture
 
 ```text
-php-k8s-crud/
+Browser
+   |
+   |
+NodePort Service
+   |
+   |
+PHP Deployment
+   |
+   |
+ConfigMap + Secret
+   |
+   |
+MySQL StatefulSet
+   |
+Headless Service
+   |
+PVC
+   |
+StorageClass (NFS)
+   |
+NFS Provisioner
+   |
+NFS Server
+```
+
+---
+
+# Project Structure
+
+```text
+Project2/
+│
 ├── app/
-│   ├── index.php
 │   ├── create.php
-│   ├── edit.php
-│   ├── delete.php
 │   ├── db.php
+│   ├── delete.php
+│   ├── edit.php
+│   ├── index.php
 │   └── Dockerfile
-└── k8s/
-    ├── namespace.yaml
-    ├── mysql-secret.yaml
-    ├── mysql-configmap.yaml
-    ├── nfs-pv.yaml
-    ├── mysql-pvc.yaml
-    ├── mysql-deployment.yaml
-    ├── mysql-service.yaml
-    ├── php-configmap.yaml
-    ├── php-deployment.yaml
-    └── php-service.yaml
+│
+├── manifests/
+│   ├── namespace.yaml
+│   │
+│   ├── mysql/
+│   │   ├── mysql-secret.yaml
+│   │   ├── mysql-headless-svc.yaml
+│   │   └── mysql-statefulset.yaml
+│   │
+│   └── php/
+│       ├── php-configmap.yaml
+│       ├── php-deployment.yaml
+│       └── php-service.yaml
+│
+└── README.md
 ```
 
-## Step 1 - Install Buildah
+---
 
-On the master node:
+# Prerequisites
+
+Before starting:
+
+* Ubuntu Linux
+* Kubernetes Cluster
+* kubeadm
+* containerd
+* NFS Server
+* NFS Subdir External Provisioner
+* Dynamic StorageClass
+* kubectl
+
+Verify:
 
 ```bash
-sudo apt update
-sudo apt install -y buildah
+kubectl get nodes
+kubectl get storageclass
 ```
 
-Verify installation:
+Expected:
 
 ```bash
-buildah version
+NAME                   PROVISIONER
+nfs-client (default)   cluster.local/nfs-storage-nfs-subdir-external-provisioner
 ```
 
-## Step 2 - Build PHP Image
+---
 
-From the app directory:
+# Step 1 - Build Docker Image
+
+Move to application directory:
 
 ```bash
-cd ~/php-k8s-crud/app
-buildah bud -t php-crud-app:v1 .
+cd app
 ```
 
-Verify the built image:
+Build image:
 
 ```bash
-buildah images
+docker build -t php-crud-app:v1 .
 ```
 
-## Step 3 - Export Image to NFS Shared Folder
-
-Example shared folder:
-
-```text
-/mnt/k8s-share
-```
-
-Export the image:
+Verify image:
 
 ```bash
-buildah push php-crud-app:v1 docker-archive:/svr/nfs/shared/php-crud-app.tar
+docker images
 ```
 
-## Step 4 - Import Image into containerd
-
-On the master node and all workers:
+Expected:
 
 ```bash
-sudo ctr -n k8s.io images import /svr/nfs/shared/php-crud-app.tar
+php-crud-app   v1
 ```
 
-Verify the imported image on each node:
+---
+
+# Step 2 - Export Docker Image
+
+Export image as tar file:
+
+```bash
+docker save php-crud-app:v1 -o php-crud-app.tar
+```
+
+Verify:
+
+```bash
+ls -lh php-crud-app.tar
+```
+
+---
+
+# Step 3 - Copy Image to Shared NFS Location
+
+Example:
+
+```bash
+cp php-crud-app.tar /srv/nfs/shared/
+```
+
+Verify:
+
+```bash
+ls /srv/nfs/shared/
+```
+
+---
+
+# Step 4 - Import Image into Containerd
+
+Perform on all Kubernetes nodes.
+
+Master:
+
+```bash
+sudo ctr -n k8s.io images import /srv/nfs/shared/php-crud-app.tar
+```
+
+Worker1:
+
+```bash
+sudo ctr -n k8s.io images import /srv/nfs/shared/php-crud-app.tar
+```
+
+Worker2:
+
+```bash
+sudo ctr -n k8s.io images import /srv/nfs/shared/php-crud-app.tar
+```
+
+Verify:
 
 ```bash
 sudo ctr -n k8s.io images ls | grep php
 ```
 
-## Step 5 - Prepare NFS Storage
-
-On the master node:
+Expected:
 
 ```bash
-sudo mkdir -p /srv/nfs/shared/mysql-data
-sudo chmod -R 777 /srv/nfs/shared/mysql-data
+php-crud-app:v1
 ```
 
-## Step 7 - Deploy Kubernetes Resources
+---
 
-From the Kubernetes manifests directory:
+# Step 5 - Create Namespace
 
 ```bash
-cd ~/php-k8s-crud/k8s
+kubectl apply -f manifests/namespace.yaml
 ```
 
-### Apply Namespace
+Verify:
 
 ```bash
-kubectl apply -f namespace.yaml
+kubectl get ns
 ```
 
-### Apply Persistent Volume
+---
+
+# Step 6 - Deploy MySQL Secret
 
 ```bash
-kubectl apply -f nfs-pv.yaml
+kubectl apply -f manifests/mysql/mysql-secret.yaml
+```
+
+Verify:
+
+```bash
+kubectl get secret -n pro2
+```
+
+---
+
+# Step 7 - Deploy Headless Service
+
+```bash
+kubectl apply -f manifests/mysql/mysql-headless-svc.yaml
+```
+
+Verify:
+
+```bash
+kubectl get svc -n pro2
+```
+
+Expected:
+
+```bash
+mysql-headless
+```
+
+---
+
+# Step 8 - Deploy MySQL StatefulSet
+
+```bash
+kubectl apply -f manifests/mysql/mysql-statefulset.yaml
+```
+
+Verify:
+
+```bash
+kubectl get pods -n pro2
+kubectl get pvc -n pro2
+```
+
+Expected:
+
+```bash
+mysql-sts-0
+```
+
+---
+
+# Step 9 - Verify Dynamic Provisioning
+
+Check PVC:
+
+```bash
+kubectl get pvc -n pro2
+```
+
+Check PV:
+
+```bash
 kubectl get pv
 ```
 
-### Apply Persistent Volume Claim
-
-```bash
-kubectl apply -f mysql-pvc.yaml
-kubectl get pvc -n php-app
-```
-
-Expected status:
-
-- `STATUS = Bound`
-
-### Apply ConfigMaps and Secrets
-
-```bash
-kubectl apply -f mysql-configmap.yaml
-kubectl apply -f mysql-secret.yaml
-kubectl apply -f php-configmap.yaml
-```
-
-## Step 8 - Deploy MySQL
-
-```bash
-kubectl apply -f mysql-deployment.yaml
-kubectl apply -f mysql-service.yaml
-kubectl get pods -n php-app
-```
-
-Wait until the MySQL pod status is:
-
-- `STATUS = Running`
-
-## Step 9 - Check MySQL Logs
-
-```bash
-kubectl logs deployment/mysql -n php-app
-```
-
-Expected output includes:
-
-- `MySQL init process done. Ready for start up.`
-
-## Step 10 - Login to MySQL
-
-Enter the MySQL pod shell:
-
-```bash
-kubectl exec -it deployment/mysql -n php-app -- bash
-```
-
-Then log in to MySQL:
-
-```bash
-mysql -u root -p
-```
-
-Password:
+Observe:
 
 ```text
-root123
+PVC --> PV --> NFS Directory
 ```
 
-## Step 11 - Create Database Table
+created automatically.
 
-Inside the MySQL shell:
+---
+
+# Step 10 - Create Database
+
+Login:
+
+```bash
+kubectl exec -it mysql-sts-0 -n pro2 -- mysql -uroot -p
+```
+
+Create database:
 
 ```sql
-USE project1db;
-CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100),
-  email VARCHAR(100)
+CREATE DATABASE cruddb;
+
+USE cruddb;
+
+CREATE TABLE users(
+id INT PRIMARY KEY AUTO_INCREMENT,
+name VARCHAR(100),
+email VARCHAR(100)
 );
+```
+
+Verify:
+
+```sql
 SHOW TABLES;
 ```
 
-Exit the MySQL shell:
+---
+
+# Step 11 - Deploy ConfigMap
 
 ```bash
-exit
+kubectl apply -f manifests/php/php-configmap.yaml
 ```
 
-## Step 12 - Deploy PHP Application
+Verify:
 
 ```bash
-kubectl apply -f php-deployment.yaml
-kubectl apply -f php-service.yaml
+kubectl describe cm php-configmap -n pro2
 ```
 
-## Step 13 - Verify Pods
+---
+
+# Step 12 - Deploy PHP Application
 
 ```bash
-kubectl get pods -n php-app -o wide
+kubectl apply -f manifests/php/php-deployment.yaml
 ```
 
-Expected pods:
+Verify:
 
-- `php-app-xxxxx` Running
-- `mysql-xxxxx` Running
+```bash
+kubectl get pods -n pro2
+```
 
-## Step 14 - Access Application
+Expected:
 
-Get the node IP:
+```bash
+php-deployment-xxxxx
+```
+
+---
+
+# Step 13 - Deploy NodePort Service
+
+```bash
+kubectl apply -f manifests/php/php-service.yaml
+```
+
+Verify:
+
+```bash
+kubectl get svc -n pro2
+```
+
+Expected:
+
+```bash
+php-service
+```
+
+---
+
+# Step 14 - Access Application
+
+Find node IP:
 
 ```bash
 kubectl get nodes -o wide
 ```
 
-Open the application in your browser:
+Access:
 
 ```text
-http://<NODE-IP>:30080
+http://<Node-IP>:30080
 ```
 
 Example:
 
 ```text
-http://192.168.1.20:30080
+http://192.168.56.10:30080
 ```
 
-## Step 15 - Verify CRUD Operations
+---
 
-Test the application by performing:
+# StatefulSet DNS
 
-1. Add User
-2. Edit User
-3. Delete User
+StatefulSet Pods receive stable DNS identities.
 
-## Step 16 - Verify Persistent Storage
+Example:
 
-Delete the MySQL pod and confirm data persistence:
+```text
+mysql-sts-0.mysql-headless
+mysql-sts-1.mysql-headless
+mysql-sts-2.mysql-headless
+```
+
+Verify:
 
 ```bash
-kubectl delete pod -l app=mysql -n php-app
+kubectl exec -it <php-pod> -n pro2 -- getent hosts mysql-sts-0.mysql-headless
 ```
 
-Wait for the MySQL pod to be recreated and verify data still exists.
+---
 
-Verify application data still exists.
+# Testing Persistence
 
-## Step 17 - Useful Kubernetes Commands
+Insert records.
 
-### Get Pods
+Delete pod:
 
 ```bash
-kubectl get pods -n php-app
+kubectl delete pod mysql-sts-0 -n pro2
 ```
 
-### Watch Pods
+Wait for recreation.
+
+Verify data still exists.
+
+This confirms persistent storage functionality.
+
+---
+
+# Concepts Learned
+
+## Stateless Applications
+
+PHP Deployment
+
+Characteristics:
+
+* Multiple replicas
+* Easily replaceable
+* No local data dependency
+
+## Stateful Applications
+
+MySQL StatefulSet
+
+Characteristics:
+
+* Stable hostname
+* Stable storage
+* Ordered deployment
+* Dedicated PVC per Pod
+
+## StorageClass
+
+Provides dynamic volume provisioning.
+
+## PVC
+
+Storage request by application.
+
+## PV
+
+Actual storage resource created dynamically.
+
+## Headless Service
+
+Provides stable DNS entries for StatefulSet Pods.
+
+---
+
+# Troubleshooting
+
+## PHP Cannot Connect to MySQL
+
+Incorrect:
+
+```text
+mysql-sts-0
+```
+
+Correct:
+
+```text
+mysql-sts-0.mysql-headless
+```
+
+---
+
+## PVC Pending
+
+Check StorageClass:
 
 ```bash
-kubectl get pods -n php-app -w
+kubectl get sc
 ```
 
-### View Pod Logs
+Verify:
+
+```yaml
+storageClassName: nfs-client
+```
+
+---
+
+## Pod Scheduling Failure
+
+Check:
 
 ```bash
-kubectl logs <pod-name> -n php-app
+kubectl describe pvc
 ```
 
-### Describe a Pod
+---
+
+## Image Pull Error
+
+Import image on all nodes:
 
 ```bash
-kubectl describe pod <pod-name> -n php-app
+sudo ctr -n k8s.io images import php-crud-app.tar
 ```
 
-### Enter a Pod Shell
-
-```bash
-kubectl exec -it <pod-name> -n php-app -- bash
-```
-
-### Delete a Pod
-
-```bash
-kubectl delete pod <pod-name> -n php-app
-```
-
-### Scale Deployment
-
-```bash
-kubectl scale deployment php-app --replicas=5 -n php-app
-```
-
-## Step 18 - Rolling Update
-
-Build a new image:
-
-```bash
-buildah bud -t php-crud-app:v2 .
-```
-
-Export the new image:
-
-```bash
-buildah push php-crud-app:v2 docker-archive:/mnt/k8s-share/php-crud-app-v2.tar
-```
-
-Import the image on all nodes:
-
-```bash
-sudo ctr -n k8s.io images import /mnt/k8s-share/php-crud-app-v2.tar
-```
-
-Update the deployment image:
-
-```bash
-kubectl set image deployment/php-app php-app=php-crud-app:v2 -n php-app
-```
-
-### Watch rollout
-
-```bash
-kubectl rollout status deployment/php-app -n php-app
-```
-
-### Rollback
-
-```bash
-kubectl rollout undo deployment/php-app -n php-app
-```
-
-## Troubleshooting
-
-### IMAGE_PULL_BACKOFF
-
-- Verify the image exists on each node:
-
-```bash
-sudo ctr -n k8s.io images ls
-```
-
-- Ensure the deployment uses the local image pull policy:
+Use:
 
 ```yaml
 imagePullPolicy: Never
 ```
 
-### MySQL CrashLoopBackOff
+---
 
-- Check MySQL logs:
+# Future Enhancements
 
-```bash
-kubectl logs deployment/mysql -n php-app
+* Ingress Controller
+* HTTPS/TLS
+* Helm Chart
+* MySQL Replication
+* Horizontal Pod Autoscaler
+* Monitoring with Prometheus
+* Grafana Dashboards
+* CI/CD Pipeline
+* ArgoCD GitOps
+
 ```
-
-- Fix NFS permissions if needed:
-
-```bash
-sudo chmod -R 777 /mnt/k8s-share/mysql-data
 ```
-
-### PVC Pending
-
-- Check the PersistentVolume status:
-
-```bash
-kubectl get pv
-```
-
-- Check the PersistentVolumeClaim status:
-
-```bash
-kubectl get pvc -n php-app
-```
-
-### PHP cannot connect to MySQL
-
-- Verify MySQL-related environment variables in the PHP pod:
-
-```bash
-kubectl exec -it deployment/php-app -n php-app -- env | grep MYSQL
-```
-
-- Verify the PHP service and MySQL service are available:
-
-```bash
-kubectl get svc -n php-app
-```
-
-## Kubernetes Concepts Practiced
-
-1. Namespace
-2. Deployment
-3. ReplicaSet
-4. Pod
-5. Service
-6. NodePort
-7. ConfigMap
-8. Secret
-9. PersistentVolume
-10. PersistentVolumeClaim
-11. NFS Storage
-12. containerd Runtime
