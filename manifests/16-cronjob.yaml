@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello-cronjob # CronJob name
+  namespace: jobs-lab # Namespace where the CronJob runs
+spec:
+  schedule: "*/1 * * * *" # Run every minute using cron format
+  suspended: false # false means the schedule is active
+  concurrencyPolicy: Forbid # prevent overlapping jobs
+  startingDeadlineSeconds: 30 # deadline for starting missed jobs
+  successfulJobsHistoryLimit: 1 # keep only 1 successful job history
+  failedJobsHistoryLimit: 3 # keep up to 3 failed job histories
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never # do not restart container on failure
+          containers:
+          - name: hello # container name
+            image: busybox # lightweight image for this task
+            command:
+            - /bin/sh
+            - -c
+            - echo "Hello from the Kubernetes cluster!" # task executed by the cron job
