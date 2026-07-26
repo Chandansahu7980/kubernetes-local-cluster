@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: production-job
+  namespace: jobs-lab
+
+spec:
+  # Number of successful Pod executions required
+  completions: 5
+
+  # Maximum number of Pods that can run simultaneously
+  parallelism: 2
+
+  # Number of retries after the initial failure
+  # Total Pods = 1 initial attempt + backoffLimit retries
+  backoffLimit: 3
+
+  # Automatically delete the Job and its Pods
+  # 60 seconds after the Job finishes (Complete or Failed)
+  ttlSecondsAfterFinished: 60
+
+  template:
+    metadata:
+      labels:
+        app: batch-job
+
+    spec:
+      # Never restart the container within the same Pod.
+      # If the Pod fails, the Job controller creates a new Pod.
+      restartPolicy: Never
+
+      containers:
+      - name: worker
+
+        image: busybox:latest
+
+        # Command executed inside the container
+        command:
+        - sh
+        - -c
+        - |
+          echo "====================================="
+          echo " Kubernetes Job Demo"
+          echo "====================================="
+          echo "Pod Name: $HOSTNAME"
+          echo "Started at: $(date)"
+          echo ""
+
+          echo "Processing data..."
+          sleep 10
+
+          echo "Task completed successfully."
+          echo "Finished at: $(date)"
+
+          exit 0
