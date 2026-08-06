@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader # Role name
+  namespace: rbac-lab # Namespace where the Role is created
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: 
+  - pods # resource type that the Role applies to [pod, replicationcontrollers, services, endpoints, persistentvolumeclaims, events, configmaps, secrets]
+  #resourcesNames: [] # no specific resource names, applies to all resources of the specified type
+  verbs: 
+  - get
+  - watch
+  - list # actions that can be performed on the resources
