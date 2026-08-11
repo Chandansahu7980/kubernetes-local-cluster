@@ -1,0 +1,42 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-hpa # Horizontal Pod Autoscaler for Nginx deployment
+  namespace: hpa-lab
+spec:
+  scaleTargetRef: # Reference to the target deployment for scaling
+    apiVersion: apps/v1 
+    kind: Deployment # Kind of the target resource
+    name: nginx # Name of the target deployment
+  
+  minReplicas: 1 # Minimum number of replicas for the deployment
+  maxReplicas: 3 # Maximum number of replicas for the deployment
+
+  metrics: # Metrics to monitor for scaling decisions
+  - type: Resource # Type of metric to monitor
+    resource:
+      name: cpu # make sure your deployment has cpu requests set, otherwise this will not work
+      target: # Target value for the CPU utilization metric
+        type: Utilization
+        averageUtilization: 50
+
+  - type: Resource
+    resource:
+      name: memory # make sure your deployment has memory requests set, otherwise this will not work
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+  behavior: # Behavior configuration for scaling actions
+    scaleUp: 
+      stabilizationWindowSeconds: 0 # Time window to stabilize scaling up actions
+      policies:
+      - type: Percent # Type of scaling policy
+        value: 100 # Maximum percentage increase in replicas during scaling up
+        periodSeconds: 60 # Time period for the scaling policy
+    scaleDown:
+      stabilizationWindowSeconds: 300 # Time window to stabilize scaling down actions
+      policies:
+      - type: Percent
+        value: 50 # Maximum percentage decrease in replicas during scaling down
+        periodSeconds: 60
